@@ -41,7 +41,7 @@ export function SiteHeader({ logoPath }: { logoPath: string }) {
         <Link href="/" className="relative z-50" onClick={() => setOpen(false)}>
           {logoPath ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoPath} alt={site.name} decoding="async" className="h-16 w-auto md:h-[4.5rem]" />
+            <img src={logoPath} alt={site.name} decoding="async" fetchPriority="high" className="h-16 w-auto md:h-[4.5rem]" />
           ) : (
             <span className="block leading-none">
               <span className="block font-serif text-[1.35rem] tracking-[0.16em]">HAPPY TOUCH</span>

@@ -11,7 +11,7 @@ export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
-    const touch = window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0;
+    const touch = window.matchMedia("(pointer: coarse)").matches;
     const lenis = new Lenis({
       lerp: touch ? 0.12 : 0.075,
       smoothWheel: true,
@@ -45,10 +45,15 @@ export function SmoothScroll() {
       lenis.resize();
       ScrollTrigger.refresh();
     };
+    const onRefresh = () => lenis.resize();
+    ScrollTrigger.addEventListener("refresh", onRefresh);
     window.addEventListener("orientationchange", onResize);
+    window.visualViewport?.addEventListener("resize", onResize);
     return () => {
       window.clearTimeout(refresh);
+      ScrollTrigger.removeEventListener("refresh", onRefresh);
       window.removeEventListener("orientationchange", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
       gsap.ticker.remove(tick);
       registerLenis(null);
       lenis.destroy();

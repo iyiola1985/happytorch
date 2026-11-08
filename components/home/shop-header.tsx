@@ -23,7 +23,7 @@ export function ShopHeader({ logoPath }: { logoPath: string }) {
         <Link href="/" className="bg-transparent">
           {logoPath ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoPath} alt={site.name} decoding="async" className="h-12 w-auto bg-transparent sm:h-14 md:h-16" />
+            <img src={logoPath} alt={site.name} decoding="async" fetchPriority="high" className="h-12 w-auto bg-transparent sm:h-14 md:h-16" />
           ) : (
             <span className="font-serif text-[1.35rem] tracking-[0.16em] text-[#111111]">HAPPY TOUCH</span>
           )}

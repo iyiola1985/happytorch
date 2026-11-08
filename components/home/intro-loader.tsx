@@ -1,21 +1,14 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { setLenisLocked } from "@/components/layout/lenis-controller";
 import { site } from "@/lib/site";
 
 export function IntroLoader({ logoPath }: { logoPath: string }) {
-  const pathname = usePathname();
-  const [phase, setPhase] = useState<"hold" | "leave" | "done">(pathname === "/" ? "done" : "hold");
+  const [phase, setPhase] = useState<"hold" | "leave" | "done">("hold");
 
   useEffect(() => {
-    if (pathname === "/") {
-      document.documentElement.classList.add("skip-intro");
-      setPhase("done");
-      return;
-    }
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches || sessionStorage.getItem("ht-intro") === "1") {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       document.documentElement.classList.add("skip-intro");
       setPhase("done");
       return;
@@ -26,12 +19,11 @@ export function IntroLoader({ logoPath }: { logoPath: string }) {
       window.clearTimeout(leave);
       setLenisLocked("intro", false);
     };
-  }, [pathname]);
+  }, []);
 
   useEffect(() => {
     if (phase !== "leave") return;
     const done = window.setTimeout(() => {
-      sessionStorage.setItem("ht-intro", "1");
       document.documentElement.classList.add("skip-intro");
       setLenisLocked("intro", false);
       setPhase("done");
@@ -46,7 +38,7 @@ export function IntroLoader({ logoPath }: { logoPath: string }) {
       <div className="px-6 text-center">
         {logoPath ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoPath} alt={site.name} decoding="async" className="mx-auto h-40 w-auto md:h-52" />
+          <img src={logoPath} alt={site.name} decoding="sync" fetchPriority="high" className="mx-auto h-40 w-auto md:h-52" />
         ) : (
           <p className="font-serif text-5xl tracking-[0.18em] text-espresso md:text-7xl">
             HAPPY TOUCH

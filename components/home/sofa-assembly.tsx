@@ -11,22 +11,88 @@ const PAPER = "#F2F3F3";
 const HOLD = 0.22;
 const BLEND = 0.18;
 
-function coverPlacement(img: HTMLImageElement, width: number, height: number) {
-  const imageRatio = img.naturalWidth / img.naturalHeight;
-  const canvasRatio = width / height;
-  if (imageRatio > canvasRatio) {
-    const drawHeight = height;
-    const drawWidth = height * imageRatio;
-    return { offsetX: (width - drawWidth) / 2, offsetY: 0, drawWidth, drawHeight };
+type FrameSource = HTMLImageElement | ImageBitmap;
+
+function frameSize(frame: FrameSource) {
+  if (frame instanceof HTMLImageElement) {
+    return { width: frame.naturalWidth, height: frame.naturalHeight };
   }
-  const drawWidth = width;
-  const drawHeight = width / imageRatio;
-  return { offsetX: 0, offsetY: (height - drawHeight) / 2, drawWidth, drawHeight };
+  return { width: frame.width, height: frame.height };
 }
 
-function paintCover(ctx: CanvasRenderingContext2D, img: HTMLImageElement, width: number, height: number) {
-  const place = coverPlacement(img, width, height);
-  ctx.drawImage(img, place.offsetX, place.offsetY, place.drawWidth, place.drawHeight);
+/** Fit the whole frame in the viewport so every device sees the same sofa, then stretch the studio edges into the spare space. */
+function paintFrame(ctx: CanvasRenderingContext2D, frame: FrameSource, width: number, height: number) {
+  const size = frameSize(frame);
+  if (size.width === 0 || size.height === 0) return;
+  const imageRatio = size.width / size.height;
+  const canvasRatio = width / height;
+  const wide = imageRatio > canvasRatio;
+  const drawWidth = wide ? width : height * imageRatio;
+  const drawHeight = wide ? width / imageRatio : height;
+  const offsetX = (width - drawWidth) / 2;
+  const offsetY = (height - drawHeight) / 2;
+
+  ctx.fillStyle = PAPER;
+  ctx.fillRect(0, 0, width, height);
+
+  if (offsetY > 1) {
+    const slice = Math.max(1, Math.round(size.height * 0.06));
+    ctx.drawImage(frame, 0, 0, size.width, slice, offsetX, 0, drawWidth, offsetY + 2);
+    ctx.drawImage(
+      frame,
+      0,
+      size.height - slice,
+      size.width,
+      slice,
+      offsetX,
+      offsetY + drawHeight - 2,
+      drawWidth,
+      height - (offsetY + drawHeight) + 2,
+    );
+  }
+
+  if (offsetX > 1) {
+    ctx.drawImage(frame, 0, 0, 1, size.height, 0, offsetY, offsetX + 2, drawHeight);
+    ctx.drawImage(
+      frame,
+      size.width - 1,
+      0,
+      1,
+      size.height,
+      offsetX + drawWidth - 2,
+      offsetY,
+      width - (offsetX + drawWidth) + 2,
+      drawHeight,
+    );
+  }
+
+  ctx.drawImage(frame, offsetX, offsetY, drawWidth, drawHeight);
+}
+
+function decodeLimit() {
+  const viewport = window.visualViewport?.width || window.innerWidth;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  if (viewport >= 768) return 1280;
+  return Math.min(960, Math.max(640, Math.ceil(viewport * dpr)));
+}
+
+async function decodeFrame(src: string, maxWidth: number) {
+  const response = await fetch(src);
+  if (!response.ok) throw new Error("frame");
+  const blob = await response.blob();
+  if (maxWidth < 1280 && typeof createImageBitmap === "function") {
+    return createImageBitmap(blob, { resizeWidth: maxWidth, resizeQuality: "medium" });
+  }
+  const url = URL.createObjectURL(blob);
+  try {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = url;
+    await image.decode();
+    return image;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function frameAt(progress: number, count: number) {
@@ -53,35 +119,59 @@ function addCaptions(timeline: gsap.core.Timeline) {
 export function SofaAssembly() {
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imagesRef = useRef<HTMLImageElement[]>([]);
+  const imagesRef = useRef<Array<FrameSource | undefined>>([]);
   const progressRef = useRef(0);
   const [percent, setPercent] = useState(0);
+  const [heroReady, setHeroReady] = useState(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let loaded = 0;
-    const images = Array.from({ length: SOFA_FRAME_COUNT }, () => new Image());
+    const frames: Array<FrameSource | undefined> = new Array(SOFA_FRAME_COUNT);
+    const maxWidth = decodeLimit();
+    const heroIndex = SOFA_FRAME_COUNT - 1;
+
     const finish = () => {
       loaded += 1;
       if (cancelled) return;
       setPercent(Math.round((loaded / SOFA_FRAME_COUNT) * 100));
+      if (frames[heroIndex]) {
+        imagesRef.current = frames;
+        setHeroReady(true);
+      }
       if (loaded === SOFA_FRAME_COUNT) {
-        imagesRef.current = images;
+        imagesRef.current = frames;
         setReady(true);
       }
     };
-    images.forEach((image, index) => {
-      image.decoding = "async";
-      image.onload = finish;
-      image.onerror = finish;
-      image.src = sofaFrameSrc(index);
-    });
+
+    const loadOne = async (index: number) => {
+      try {
+        frames[index] = await decodeFrame(sofaFrameSrc(index), maxWidth);
+      } catch {
+        frames[index] = frames[heroIndex];
+      }
+      finish();
+    };
+
+    void (async () => {
+      await loadOne(heroIndex);
+      const queue = Array.from({ length: heroIndex }, (_, index) => index);
+      const workers = Array.from({ length: 4 }, async () => {
+        while (!cancelled && queue.length > 0) {
+          const index = queue.shift();
+          if (index === undefined) return;
+          await loadOne(index);
+        }
+      });
+      await Promise.all(workers);
+    })();
+
     return () => {
       cancelled = true;
-      images.forEach((image) => {
-        image.onload = null;
-        image.onerror = null;
+      frames.forEach((frame) => {
+        if (frame instanceof ImageBitmap) frame.close();
       });
     };
   }, []);
@@ -122,7 +212,7 @@ export function SofaAssembly() {
     };
 
     mm.add("(min-width: 768px)", () => mount(3));
-    mm.add("(max-width: 767px)", () => mount(2));
+    mm.add("(max-width: 767px)", () => mount(3));
     const refresh = window.setTimeout(() => ScrollTrigger.refresh(), 200);
     return () => {
       window.clearTimeout(refresh);
@@ -131,7 +221,7 @@ export function SofaAssembly() {
   }, [ready]);
 
   useEffect(() => {
-    if (!ready) return;
+    if (!heroReady) return;
     const canvas = canvasRef.current;
     const parent = canvas?.parentElement;
     const ctx = canvas?.getContext("2d", { alpha: false });
@@ -144,8 +234,12 @@ export function SofaAssembly() {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const width = parent.clientWidth;
       const height = parent.clientHeight;
-      canvas.width = Math.max(1, Math.round(width * dpr));
-      canvas.height = Math.max(1, Math.round(height * dpr));
+      const nextWidth = Math.max(1, Math.round(width * dpr));
+      const nextHeight = Math.max(1, Math.round(height * dpr));
+      if (canvas.width === nextWidth && canvas.height === nextHeight) return;
+      canvas.width = nextWidth;
+      canvas.height = nextHeight;
+      lastKey = "";
     };
 
     const draw = () => {
@@ -159,29 +253,33 @@ export function SofaAssembly() {
       if (key === lastKey) return;
       const sofa = images[count - 1];
       const image = images[index];
-      if (!sofa || !sofa.complete || sofa.naturalWidth === 0) return;
-      if (mix > 0 && (!image || !image.complete || image.naturalWidth === 0)) return;
+      if (!sofa || frameSize(sofa).width === 0) return;
+      if (mix > 0 && (!image || frameSize(image).width === 0)) return;
       ctx.globalAlpha = 1;
-      ctx.fillStyle = PAPER;
-      ctx.fillRect(0, 0, width, height);
-      paintCover(ctx, sofa, width, height);
+      paintFrame(ctx, sofa, width, height);
       if (mix > 0 && image) {
         ctx.globalAlpha = mix;
-        paintCover(ctx, image, width, height);
+        paintFrame(ctx, image, width, height);
         ctx.globalAlpha = 1;
       }
       lastKey = key;
     };
 
     const tick = () => {
-      draw();
+      try {
+        draw();
+      } catch {
+        lastKey = "";
+      }
       frame = window.requestAnimationFrame(tick);
     };
 
     resize();
+    draw();
     const observer = new ResizeObserver(() => {
       resize();
       lastKey = "";
+      draw();
     });
     observer.observe(parent);
     frame = window.requestAnimationFrame(tick);
@@ -189,7 +287,7 @@ export function SofaAssembly() {
       window.cancelAnimationFrame(frame);
       observer.disconnect();
     };
-  }, [ready]);
+  }, [heroReady]);
 
   return (
     <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3]">
@@ -202,24 +300,24 @@ export function SofaAssembly() {
         }}
       />
       <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-5 pt-16 text-center text-white sm:px-6">
-        <div data-hero-copy className="max-w-[18rem] sm:max-w-none">
-          <p className="font-sans text-[clamp(2.35rem,11vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">Furniture</p>
-          <p className="font-sans text-[clamp(2.35rem,11vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">&amp; Interiors</p>
-          <p className="mt-3 font-serif text-[clamp(1.15rem,4.6vw,3rem)] leading-tight italic">{site.tagline}</p>
+        <div data-hero-copy className="w-full">
+          <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">Furniture</p>
+          <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">&amp; Interiors</p>
+          <p className="mt-3 font-serif text-[clamp(1.05rem,3.4vw,3rem)] leading-tight italic">{site.tagline}</p>
         </div>
-        <p data-line="0" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.7rem,7vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="0" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
           It starts in pieces.
         </p>
-        <p data-line="50" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.7rem,7vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="50" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
           Engineered to fit together.
         </p>
-        <p data-line="100" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.7rem,7vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="100" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
           The Mustard Velvet Sofa. Built to be lived in.
         </p>
       </div>
       {ready ? null : (
-        <div className="absolute inset-0 z-20 grid place-items-center bg-[#F2F3F3]">
-          <p className="text-sm tracking-[0.18em] text-[#3a3a3a] uppercase" role="status" aria-live="polite">
+        <div className="absolute inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-20 flex justify-center px-5">
+          <p className="text-[0.68rem] tracking-[0.18em] text-white/80 uppercase" role="status" aria-live="polite">
             Assembling sofa... {percent}%
           </p>
         </div>

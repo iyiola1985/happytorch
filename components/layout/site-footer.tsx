@@ -17,7 +17,7 @@ export function SiteFooter({ instagram, logoPath }: { instagram: string; logoPat
                 }}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logoPath} alt={site.name} decoding="async" className="relative h-20 w-auto max-w-full bg-transparent md:h-32" />
+              <img src={logoPath} alt={site.name} loading="lazy" decoding="async" className="relative h-20 w-auto max-w-full bg-transparent md:h-32" />
             </Link>
           ) : (
             <p className="font-serif text-5xl leading-none tracking-[0.08em] md:text-7xl">HAPPY TOUCH</p>
