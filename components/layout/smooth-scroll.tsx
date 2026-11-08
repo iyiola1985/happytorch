@@ -12,13 +12,13 @@ export function SmoothScroll() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
-    const touch = window.matchMedia("(pointer: coarse)").matches;
+    ScrollTrigger.normalizeScroll(true);
     const lenis = new Lenis({
       lerp: 0.075,
       smoothWheel: true,
-      syncTouch: touch,
+      syncTouch: true,
       syncTouchLerp: 0.075,
-      touchMultiplier: 1,
+      touchMultiplier: 1.5,
       wheelMultiplier: 0.8,
       autoRaf: false,
       anchors: true,

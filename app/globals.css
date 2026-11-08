@@ -141,7 +141,7 @@ textarea {
 
 dialog.viewer {
   width: min(100vw, 100%);
-  height: 100vh;
+  height: 100dvh;
   max-width: none;
   max-height: none;
   margin: 0;
@@ -157,7 +157,7 @@ dialog.viewer::backdrop {
 
 dialog.drawer {
   margin: 0 0 0 auto;
-  height: 100vh;
+  height: 100dvh;
   width: min(100%, 34rem);
   max-width: none;
   border: 0;

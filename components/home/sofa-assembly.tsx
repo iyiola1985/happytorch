@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SOFA_FRAME_COUNT, sofaFrameSrc } from "@/lib/sofa-frames";
+import { DESKTOP_FRAME_COUNT, MOBILE_FRAME_COUNT, sequenceFrameSrc } from "@/lib/sofa-frames";
 import { site } from "@/lib/site";
 
 const PAPER = "#F2F3F3";
@@ -69,11 +69,8 @@ function paintFrame(ctx: CanvasRenderingContext2D, frame: FrameSource, width: nu
   ctx.drawImage(frame, offsetX, offsetY, drawWidth, drawHeight);
 }
 
-function decodeLimit() {
-  const viewport = window.visualViewport?.width || window.innerWidth;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  if (viewport >= 768) return 1280;
-  return Math.min(960, Math.max(640, Math.ceil(viewport * dpr)));
+function mobileSequence() {
+  return window.matchMedia("(max-width: 1023px)").matches;
 }
 
 async function decodeFrame(src: string, maxWidth: number) {
@@ -125,21 +122,30 @@ export function SofaAssembly() {
 
   useEffect(() => {
     let cancelled = false;
-    const frames: Array<FrameSource | undefined> = new Array(SOFA_FRAME_COUNT);
-    const maxWidth = decodeLimit();
-    const heroIndex = SOFA_FRAME_COUNT - 1;
+    let loaded = 0;
+    const mobile = mobileSequence();
+    const count = mobile ? MOBILE_FRAME_COUNT : DESKTOP_FRAME_COUNT;
+    const frames: Array<FrameSource | undefined> = new Array(count);
+    const maxWidth = mobile ? 900 : 1280;
+    const heroIndex = count - 1;
+    gsap.registerPlugin(ScrollTrigger);
 
     const finish = () => {
+      loaded += 1;
       if (cancelled) return;
       if (frames[heroIndex]) {
         imagesRef.current = frames;
         setHeroReady(true);
       }
+      if (loaded === count) {
+        imagesRef.current = frames;
+        ScrollTrigger.refresh();
+      }
     };
 
     const loadOne = async (index: number) => {
       try {
-        frames[index] = await decodeFrame(sofaFrameSrc(index), maxWidth);
+        frames[index] = await decodeFrame(sequenceFrameSrc(index, mobile), maxWidth);
       } catch {
         frames[index] = frames[heroIndex];
       }
@@ -172,6 +178,7 @@ export function SofaAssembly() {
     const root = sectionRef.current;
     if (!root) return;
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       progressRef.current = 0;
@@ -184,14 +191,14 @@ export function SofaAssembly() {
     }
 
     const mm = gsap.matchMedia();
-    const mount = (screens: number) => {
+    const mount = (end: string, pinType: "fixed" | "transform") => {
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: root,
           start: "top top",
-          end: () => `+=${window.innerHeight * screens}`,
+          end,
           pin: true,
-          pinType: "fixed",
+          pinType,
           scrub: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
@@ -203,11 +210,16 @@ export function SofaAssembly() {
       addCaptions(timeline);
     };
 
-    mm.add("(min-width: 768px)", () => mount(3));
-    mm.add("(max-width: 767px)", () => mount(3));
-    const refresh = window.setTimeout(() => ScrollTrigger.refresh(), 200);
+    mm.add("(min-width: 1024px)", () => mount("+=3000", "transform"));
+    mm.add("(max-width: 1023px)", () => mount("+=1500", "fixed"));
+    const refresh = () => ScrollTrigger.refresh();
+    const refreshSoon = window.setTimeout(refresh, 200);
+    window.addEventListener("load", refresh);
+    window.addEventListener("resize", refresh);
     return () => {
-      window.clearTimeout(refresh);
+      window.clearTimeout(refreshSoon);
+      window.removeEventListener("load", refresh);
+      window.removeEventListener("resize", refresh);
       mm.revert();
     };
   }, [heroReady]);
@@ -282,7 +294,7 @@ export function SofaAssembly() {
   }, [heroReady]);
 
   return (
-    <section id="furniture" ref={sectionRef} className="relative h-[100svh] overflow-hidden bg-[#F2F3F3]">
+    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3]">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Mustard velvet sofa assembling" />
       <div
         className="pointer-events-none absolute inset-0 z-10"
