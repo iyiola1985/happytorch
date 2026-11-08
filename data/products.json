@@ -1,0 +1,245 @@
+[
+  {
+    "id": "curved-sectional-sofa",
+    "slug": "curved-sectional-sofa",
+    "name": "Curved sectional sofa",
+    "categoryId": "luxury-sofas-sectionals",
+    "description": "Cream and caramel curved sectional seating, as shown.",
+    "images": [
+      {
+        "src": "/catalog/curved-sectional-sofa.webp",
+        "alt": "Cream and caramel curved sectional with chairs around an oval table."
+      }
+    ],
+    "priceNgn": null,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Cream and caramel",
+    "featured": true,
+    "homepageFeatured": true,
+    "showroomRoom": "living",
+    "showroomAnchor": "living-sofa",
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "recliner-sofa",
+    "slug": "recliner-sofa",
+    "name": "Recliner sofa",
+    "categoryId": "lounge-furniture",
+    "description": "Red recliner, as shown.",
+    "images": [
+      {
+        "src": "/catalog/recliner-sofa.webp",
+        "alt": "Red recliner chair on a swivel base."
+      }
+    ],
+    "priceNgn": 450000,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Red",
+    "featured": true,
+    "homepageFeatured": true,
+    "showroomRoom": "lounge",
+    "showroomAnchor": "lounge-chair",
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "upholstered-bed",
+    "slug": "upholstered-bed",
+    "name": "Upholstered bed",
+    "categoryId": "bedroom-furniture",
+    "description": "Cream upholstered bed frame, as shown.",
+    "images": [
+      {
+        "src": "/catalog/upholstered-bed.webp",
+        "alt": "Cream channel-tufted upholstered bed frame with wooden slats."
+      }
+    ],
+    "priceNgn": null,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Cream",
+    "featured": true,
+    "homepageFeatured": true,
+    "showroomRoom": "bedroom",
+    "showroomAnchor": "bedroom-bed",
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "oval-dining-set",
+    "slug": "oval-dining-set",
+    "name": "Bouclé sofa",
+    "categoryId": "luxury-sofas-sectionals",
+    "description": "Cream bouclé sofa, as shown.",
+    "images": [
+      {
+        "src": "/catalog/oval-dining-set.webp",
+        "alt": "Cream bouclé sofa with brown cushions."
+      }
+    ],
+    "priceNgn": 850000,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Cream",
+    "featured": true,
+    "homepageFeatured": true,
+    "showroomRoom": "living",
+    "showroomAnchor": null,
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "display-cabinet",
+    "slug": "display-cabinet",
+    "name": "Chaise lounge",
+    "categoryId": "lounge-furniture",
+    "description": "Cream chaise lounge, as shown.",
+    "images": [
+      {
+        "src": "/catalog/display-cabinet.webp",
+        "alt": "Cream curved chaise lounge."
+      }
+    ],
+    "priceNgn": 400000,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Cream",
+    "featured": true,
+    "homepageFeatured": false,
+    "showroomRoom": null,
+    "showroomAnchor": null,
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "automatic-massage-chair",
+    "slug": "automatic-massage-chair",
+    "name": "Upholstered bench",
+    "categoryId": "lounge-furniture",
+    "description": "Upholstered bench with a wood base, as shown.",
+    "images": [
+      {
+        "src": "/catalog/automatic-massage-chair.webp",
+        "alt": "Beige upholstered bench with a wood base."
+      }
+    ],
+    "priceNgn": 950000,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Beige",
+    "featured": true,
+    "homepageFeatured": false,
+    "showroomRoom": null,
+    "showroomAnchor": null,
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "dining-set",
+    "slug": "dining-set",
+    "name": "Dining set",
+    "categoryId": "dining-sets",
+    "description": "Dining table with mustard upholstered chairs, as shown.",
+    "images": [
+      {
+        "src": "/catalog/dining-set.webp",
+        "alt": "Dark dining table with mustard rolled-back chairs."
+      }
+    ],
+    "priceNgn": null,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Mustard, as shown",
+    "featured": true,
+    "homepageFeatured": false,
+    "showroomRoom": "dining",
+    "showroomAnchor": "dining-table",
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "executive-office-set",
+    "slug": "executive-office-set",
+    "name": "Sofa set",
+    "categoryId": "luxury-sofas-sectionals",
+    "description": "Cream sofa set, as shown.",
+    "images": [
+      {
+        "src": "/catalog/executive-office-set.webp",
+        "alt": "Cream upholstered sofas arranged with a marble-top coffee table."
+      }
+    ],
+    "priceNgn": null,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Cream",
+    "featured": true,
+    "homepageFeatured": false,
+    "showroomRoom": null,
+    "showroomAnchor": null,
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  },
+  {
+    "id": "bedside-table",
+    "slug": "bedside-table",
+    "name": "Bedside table",
+    "categoryId": "bedroom-furniture",
+    "description": "Grey bedside table with a wireless charging top, as shown.",
+    "images": [
+      {
+        "src": "/catalog/bedside-table.webp",
+        "alt": "Grey bedside table with a lit charging top."
+      }
+    ],
+    "priceNgn": 230000,
+    "internationalPrice": null,
+    "stockStatus": null,
+    "dimensions": "",
+    "material": "",
+    "colour": "Grey",
+    "featured": true,
+    "homepageFeatured": false,
+    "showroomRoom": "bedroom",
+    "showroomAnchor": "bedroom-side-a",
+    "modelPath": "",
+    "published": true,
+    "createdAt": "2026-11-08T11:30:00.000Z",
+    "updatedAt": "2026-11-08T11:30:00.000Z"
+  }
+]

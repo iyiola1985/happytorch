@@ -1,0 +1,72 @@
+[
+  {
+    "id": "luxury-sofas-sectionals",
+    "slug": "luxury-sofas-sectionals",
+    "name": "Luxury Sofas & Sectionals",
+    "description": "",
+    "sortOrder": 1
+  },
+  {
+    "id": "accent-chairs",
+    "slug": "accent-chairs",
+    "name": "Accent Chairs",
+    "description": "",
+    "sortOrder": 2
+  },
+  {
+    "id": "dining-sets",
+    "slug": "dining-sets",
+    "name": "Dining Sets",
+    "description": "",
+    "sortOrder": 3
+  },
+  {
+    "id": "centre-tables",
+    "slug": "centre-tables",
+    "name": "Centre Tables",
+    "description": "",
+    "sortOrder": 4
+  },
+  {
+    "id": "tv-consoles-media-units",
+    "slug": "tv-consoles-media-units",
+    "name": "TV Consoles & Media Units",
+    "description": "",
+    "sortOrder": 5
+  },
+  {
+    "id": "bedroom-furniture",
+    "slug": "bedroom-furniture",
+    "name": "Bedroom Furniture",
+    "description": "",
+    "sortOrder": 6
+  },
+  {
+    "id": "lounge-furniture",
+    "slug": "lounge-furniture",
+    "name": "Lounge Furniture",
+    "description": "",
+    "sortOrder": 7
+  },
+  {
+    "id": "decorative-accessories",
+    "slug": "decorative-accessories",
+    "name": "Decorative Accessories",
+    "description": "",
+    "sortOrder": 8
+  },
+  {
+    "id": "lighting",
+    "slug": "lighting",
+    "name": "Lighting",
+    "description": "",
+    "sortOrder": 9
+  },
+  {
+    "id": "other-home-furnishings",
+    "slug": "other-home-furnishings",
+    "name": "Other Home Furnishings",
+    "description": "",
+    "sortOrder": 10
+  }
+]

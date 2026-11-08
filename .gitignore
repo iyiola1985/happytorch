@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+.vercel
+*.log
+.env
+.env*.local
+tsconfig.tsbuildinfo
+.DS_Store
+public/media/products
+public/media/brand
+public/models/uploads
+data/enquiries.json
+data/*.tmp
