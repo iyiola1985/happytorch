@@ -189,8 +189,9 @@ export function SofaAssembly() {
         scrollTrigger: {
           trigger: root,
           start: "top top",
-          end: () => `+=${(window.visualViewport?.height || window.innerHeight) * screens}`,
+          end: () => `+=${window.innerHeight * screens}`,
           pin: true,
+          pinType: "fixed",
           scrub: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
@@ -281,7 +282,7 @@ export function SofaAssembly() {
   }, [heroReady]);
 
   return (
-    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3]">
+    <section id="furniture" ref={sectionRef} className="relative h-[100svh] overflow-hidden bg-[#F2F3F3]">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Mustard velvet sofa assembling" />
       <div
         className="pointer-events-none absolute inset-0 z-10"

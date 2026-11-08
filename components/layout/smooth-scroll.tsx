@@ -11,10 +11,14 @@ export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ ignoreMobileResize: true });
+    const touch = window.matchMedia("(pointer: coarse)").matches;
     const lenis = new Lenis({
       lerp: 0.075,
       smoothWheel: true,
-      syncTouch: false,
+      syncTouch: touch,
+      syncTouchLerp: 0.075,
+      touchMultiplier: 1,
       wheelMultiplier: 0.8,
       autoRaf: false,
       anchors: true,
