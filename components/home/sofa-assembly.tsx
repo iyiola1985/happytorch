@@ -121,28 +121,19 @@ export function SofaAssembly() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<Array<FrameSource | undefined>>([]);
   const progressRef = useRef(0);
-  const [percent, setPercent] = useState(0);
   const [heroReady, setHeroReady] = useState(false);
-  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    let loaded = 0;
     const frames: Array<FrameSource | undefined> = new Array(SOFA_FRAME_COUNT);
     const maxWidth = decodeLimit();
     const heroIndex = SOFA_FRAME_COUNT - 1;
 
     const finish = () => {
-      loaded += 1;
       if (cancelled) return;
-      setPercent(Math.round((loaded / SOFA_FRAME_COUNT) * 100));
       if (frames[heroIndex]) {
         imagesRef.current = frames;
         setHeroReady(true);
-      }
-      if (loaded === SOFA_FRAME_COUNT) {
-        imagesRef.current = frames;
-        setReady(true);
       }
     };
 
@@ -177,7 +168,7 @@ export function SofaAssembly() {
   }, []);
 
   useLayoutEffect(() => {
-    if (!ready) return;
+    if (!heroReady) return;
     const root = sectionRef.current;
     if (!root) return;
     gsap.registerPlugin(ScrollTrigger);
@@ -218,7 +209,7 @@ export function SofaAssembly() {
       window.clearTimeout(refresh);
       mm.revert();
     };
-  }, [ready]);
+  }, [heroReady]);
 
   useEffect(() => {
     if (!heroReady) return;
@@ -315,13 +306,6 @@ export function SofaAssembly() {
           The Mustard Velvet Sofa. Built to be lived in.
         </p>
       </div>
-      {ready ? null : (
-        <div className="absolute inset-x-0 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-20 flex justify-center px-5">
-          <p className="text-[0.68rem] tracking-[0.18em] text-white/80 uppercase" role="status" aria-live="polite">
-            Assembling sofa... {percent}%
-          </p>
-        </div>
-      )}
     </section>
   );
 }
