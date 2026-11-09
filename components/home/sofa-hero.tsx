@@ -6,7 +6,7 @@ export function SofaHero() {
         alt="Mustard velvet sofa"
         decoding="async"
         fetchPriority="high"
-        className="absolute inset-0 h-full w-full object-cover object-center"
+        className="absolute inset-0 h-full w-full object-contain object-bottom min-[1024px]:object-cover min-[1024px]:object-center"
       />
       <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center px-5 pt-[max(6.5rem,calc(env(safe-area-inset-top)+5.5rem))] text-center text-[#111111] min-[1024px]:px-6">
         <div>
