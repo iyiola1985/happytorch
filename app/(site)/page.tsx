@@ -1,5 +1,7 @@
+import { ChairClose } from "@/components/home/chair-close";
 import { ShopHeader } from "@/components/home/shop-header";
 import { SofaAssembly } from "@/components/home/sofa-assembly";
+import { SofaHero } from "@/components/home/sofa-hero";
 import { pageMetadata } from "@/lib/seo";
 import { getSettings } from "@/lib/store";
 
@@ -14,7 +16,9 @@ export default async function HomePage() {
   return (
     <>
       <ShopHeader logoPath={settings.logoPath} />
+      <SofaHero />
       <SofaAssembly />
+      <ChairClose />
     </>
   );
 }

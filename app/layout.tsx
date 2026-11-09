@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Outfit } from "next/font/google";
+import { Bodoni_Moda, Cormorant_Garamond, Outfit } from "next/font/google";
 import { brand } from "@/lib/brand";
 import { site, siteUrl } from "@/lib/site";
 import "./globals.css";
@@ -16,6 +16,14 @@ const sans = Outfit({
   subsets: ["latin"],
   weight: ["300", "400", "500"],
   variable: "--font-outfit",
+  display: "swap",
+});
+
+const display = Bodoni_Moda({
+  subsets: ["latin"],
+  weight: ["500"],
+  style: ["italic"],
+  variable: "--font-bodoni",
   display: "swap",
 });
 
@@ -61,7 +69,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${serif.variable} ${sans.variable}`}>
+    <html lang="en" className={`${serif.variable} ${sans.variable} ${display.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

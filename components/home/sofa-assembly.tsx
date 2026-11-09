@@ -4,12 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DESKTOP_FRAME_COUNT, MOBILE_FRAME_COUNT, sequenceFrameSrc } from "@/lib/sofa-frames";
-import { site } from "@/lib/site";
 
 const PAPER = "#F2F3F3";
-
-const HOLD = 0.22;
-const BLEND = 0.18;
 
 type FrameSource = HTMLImageElement | ImageBitmap;
 
@@ -97,11 +93,8 @@ function nearestFrame(images: Array<FrameSource | undefined>, index: number) {
 }
 
 function frameAt(progress: number, count: number) {
-  if (progress <= HOLD) return { index: count - 1, mix: 0 };
-  const played = (progress - HOLD) / (1 - HOLD);
-  const index = Math.min(count - 1, Math.max(0, Math.round(played * (count - 1))));
-  const mix = played >= BLEND ? 1 : played / BLEND;
-  return { index, mix };
+  const index = Math.min(count - 1, Math.max(0, Math.round(progress * (count - 1))));
+  return { index };
 }
 
 function fade(progress: number, start: number, end: number) {
@@ -110,28 +103,19 @@ function fade(progress: number, start: number, end: number) {
   return (progress - start) / (end - start);
 }
 
-function paintCaptions(root: HTMLElement, progress: number) {
-  const hero = root.querySelector<HTMLElement>("[data-hero-copy]");
-  const line0 = root.querySelector<HTMLElement>("[data-line='0']");
-  const line50 = root.querySelector<HTMLElement>("[data-line='50']");
-  const line100 = root.querySelector<HTMLElement>("[data-line='100']");
-  if (hero) hero.style.opacity = String(1 - fade(progress, 0.12, 0.24));
-  if (line0) line0.style.opacity = String(fade(progress, 0.16, 0.28) * (1 - fade(progress, 0.36, 0.48)));
-  if (line50) line50.style.opacity = String(fade(progress, 0.4, 0.52) * (1 - fade(progress, 0.6, 0.72)));
-  if (line100) line100.style.opacity = String(fade(progress, 0.64, 0.78));
+function paintLine(line: HTMLElement | null, amount: number) {
+  const reveal = line?.querySelector<HTMLElement>("[data-reveal]");
+  if (!reveal) return;
+  const shown = Math.min(1, Math.max(0, amount));
+  reveal.style.opacity = String(shown);
+  reveal.style.transform = `translate3d(0, ${(1 - shown) * 22}px, 0)`;
+  reveal.style.clipPath = `inset(${(1 - shown) * 45}% 0 0 0)`;
 }
 
-function addCaptions(timeline: gsap.core.Timeline) {
-  timeline.set("[data-hero-copy]", { opacity: 1 }, 0);
-  timeline.set("[data-line='0']", { opacity: 0 }, 0);
-  timeline.set("[data-line='50']", { opacity: 0 }, 0);
-  timeline.set("[data-line='100']", { opacity: 0 }, 0);
-  timeline.to("[data-hero-copy]", { opacity: 0, ease: "none", duration: 0.12 }, 0.12);
-  timeline.fromTo("[data-line='0']", { opacity: 0 }, { opacity: 1, ease: "none", duration: 0.12 }, 0.16);
-  timeline.to("[data-line='0']", { opacity: 0, ease: "none", duration: 0.12 }, 0.36);
-  timeline.fromTo("[data-line='50']", { opacity: 0 }, { opacity: 1, ease: "none", duration: 0.12 }, 0.4);
-  timeline.to("[data-line='50']", { opacity: 0, ease: "none", duration: 0.12 }, 0.6);
-  timeline.fromTo("[data-line='100']", { opacity: 0 }, { opacity: 1, ease: "none", duration: 0.14 }, 0.64);
+function paintCaptions(root: HTMLElement, progress: number) {
+  paintLine(root.querySelector<HTMLElement>("[data-line='0']"), 1 - fade(progress, 0.18, 0.3));
+  paintLine(root.querySelector<HTMLElement>("[data-line='50']"), fade(progress, 0.26, 0.38) * (1 - fade(progress, 0.52, 0.64)));
+  paintLine(root.querySelector<HTMLElement>("[data-line='100']"), fade(progress, 0.6, 0.74));
 }
 
 export function SofaAssembly() {
@@ -141,7 +125,7 @@ export function SofaAssembly() {
   const imagesRef = useRef<Array<FrameSource | undefined>>([]);
   const progressRef = useRef(0);
   const drawRef = useRef<() => void>(() => {});
-  const [heroReady, setHeroReady] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,15 +133,14 @@ export function SofaAssembly() {
     const mobile = mobileSequence();
     const count = mobile ? MOBILE_FRAME_COUNT : DESKTOP_FRAME_COUNT;
     const frames: Array<FrameSource | undefined> = new Array(count);
-    const heroIndex = count - 1;
     gsap.registerPlugin(ScrollTrigger);
 
     const finish = () => {
       loaded += 1;
       if (cancelled) return;
-      if (frames[heroIndex]) {
+      if (frames[0]) {
         imagesRef.current = frames;
-        setHeroReady(true);
+        setReady(true);
       }
       if (loaded === count) {
         imagesRef.current = frames;
@@ -176,8 +159,8 @@ export function SofaAssembly() {
     };
 
     void (async () => {
-      await loadOne(heroIndex);
-      const queue = Array.from({ length: heroIndex }, (_, index) => index);
+      await loadOne(0);
+      const queue = Array.from({ length: count - 1 }, (_, index) => index + 1);
       const workers = Array.from({ length: 4 }, async () => {
         while (!cancelled && queue.length > 0) {
           const index = queue.shift();
@@ -197,7 +180,7 @@ export function SofaAssembly() {
   }, []);
 
   useLayoutEffect(() => {
-    if (!heroReady) return;
+    if (!ready) return;
     const root = sectionRef.current;
     const track = trackRef.current;
     if (!root || !track) return;
@@ -207,16 +190,19 @@ export function SofaAssembly() {
     if (reduced) {
       progressRef.current = 0;
       root.querySelectorAll<HTMLElement>("[data-line]").forEach((line) => {
-        line.style.opacity = "0";
+        const reveal = line.querySelector<HTMLElement>("[data-reveal]");
+        if (!reveal) return;
+        reveal.style.opacity = line.dataset.line === "0" ? "1" : "0";
+        reveal.style.transform = "none";
+        reveal.style.clipPath = "none";
       });
-      const heroCopy = root.querySelector<HTMLElement>("[data-hero-copy]");
-      if (heroCopy) heroCopy.style.opacity = "1";
       return;
     }
 
     const mm = gsap.matchMedia();
     const syncProgress = (self: ScrollTrigger) => {
       progressRef.current = self.progress;
+      paintCaptions(root, self.progress);
       drawRef.current();
     };
 
@@ -234,7 +220,7 @@ export function SofaAssembly() {
           onUpdate: syncProgress,
         },
       });
-      addCaptions(timeline);
+      return () => timeline.kill();
     });
 
     mm.add("(max-width: 1023px)", () => {
@@ -325,10 +311,10 @@ export function SofaAssembly() {
       window.removeEventListener("resize", refresh);
       mm.revert();
     };
-  }, [heroReady]);
+  }, [ready]);
 
   useEffect(() => {
-    if (!heroReady) return;
+    if (!ready) return;
     const canvas = canvasRef.current;
     const parent = canvas?.parentElement;
     const ctx = canvas?.getContext("2d", { alpha: false });
@@ -354,20 +340,13 @@ export function SofaAssembly() {
       if (!count) return;
       const width = canvas.width;
       const height = canvas.height;
-      const { index, mix } = frameAt(progressRef.current, count);
-      const key = `${index}:${mix.toFixed(3)}:${width}:${height}`;
+      const { index } = frameAt(progressRef.current, count);
+      const key = `${index}:${width}:${height}`;
       if (key === lastKey) return;
-      const sofa = images[count - 1];
       const image = nearestFrame(images, index);
-      if (!sofa || frameSize(sofa).width === 0) return;
-      if (mix > 0 && !image) return;
+      if (!image) return;
       ctx.globalAlpha = 1;
-      if (mix < 1) paintFrame(ctx, sofa, width, height);
-      if (mix > 0 && image) {
-        ctx.globalAlpha = mix;
-        paintFrame(ctx, image, width, height);
-        ctx.globalAlpha = 1;
-      }
+      paintFrame(ctx, image, width, height);
       lastKey = key;
     };
 
@@ -392,7 +371,7 @@ export function SofaAssembly() {
       drawRef.current = () => {};
       observer.disconnect();
     };
-  }, [heroReady]);
+  }, [ready]);
 
   return (
     <div ref={trackRef} className="relative touch-pan-y">
@@ -406,19 +385,14 @@ export function SofaAssembly() {
         }}
       />
       <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-center px-5 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center text-white min-[1024px]:items-center min-[1024px]:px-6 min-[1024px]:pb-0 min-[1024px]:pt-16">
-        <div data-hero-copy className="w-full">
-          <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">Furniture</p>
-          <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">&amp; Interiors</p>
-          <p className="mt-3 font-serif text-[clamp(1.05rem,3.4vw,3rem)] leading-tight italic">{site.tagline}</p>
-        </div>
-        <p data-line="0" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
-          It starts in pieces.
+        <p data-line="0" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
+          <span data-reveal className="inline-block max-w-full font-display text-[clamp(1.85rem,5.2vw,4.4rem)] leading-[1.05] font-medium italic text-balance">It starts in pieces.</span>
         </p>
-        <p data-line="50" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
-          Engineered to fit together.
+        <p data-line="50" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
+          <span data-reveal className="inline-block max-w-full font-display text-[clamp(1.85rem,5.2vw,4.4rem)] leading-[1.05] font-medium italic text-balance opacity-0">Engineered to fit together.</span>
         </p>
-        <p data-line="100" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
-          The Mustard Velvet Sofa. Built to be lived in.
+        <p data-line="100" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
+          <span data-reveal className="inline-block max-w-full font-display text-[clamp(1.85rem,5.2vw,4.4rem)] leading-[1.05] font-medium italic text-balance opacity-0">The Mustard Velvet Sofa. Built to be lived in.</span>
         </p>
       </div>
     </section>
