@@ -10,12 +10,14 @@ import "lenis/dist/lenis.css";
 export function SmoothScroll() {
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const finger = window.matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+    if (finger) return;
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
     const lenis = new Lenis({
       lerp: 0.075,
       smoothWheel: true,
-      syncTouch: true,
+      syncTouch: false,
       syncTouchLerp: 0.075,
       touchMultiplier: 1.5,
       wheelMultiplier: 0.8,

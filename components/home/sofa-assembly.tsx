@@ -100,6 +100,23 @@ function frameAt(progress: number, count: number) {
   return { index, mix };
 }
 
+function fade(progress: number, start: number, end: number) {
+  if (progress <= start) return 0;
+  if (progress >= end) return 1;
+  return (progress - start) / (end - start);
+}
+
+function paintCaptions(root: HTMLElement, progress: number) {
+  const hero = root.querySelector<HTMLElement>("[data-hero-copy]");
+  const line0 = root.querySelector<HTMLElement>("[data-line='0']");
+  const line50 = root.querySelector<HTMLElement>("[data-line='50']");
+  const line100 = root.querySelector<HTMLElement>("[data-line='100']");
+  if (hero) hero.style.opacity = String(1 - fade(progress, 0.12, 0.24));
+  if (line0) line0.style.opacity = String(fade(progress, 0.16, 0.28) * (1 - fade(progress, 0.36, 0.48)));
+  if (line50) line50.style.opacity = String(fade(progress, 0.4, 0.52) * (1 - fade(progress, 0.6, 0.72)));
+  if (line100) line100.style.opacity = String(fade(progress, 0.64, 0.78));
+}
+
 function addCaptions(timeline: gsap.core.Timeline) {
   timeline.set("[data-hero-copy]", { opacity: 1 }, 0);
   timeline.set("[data-line='0']", { opacity: 0 }, 0);
@@ -114,6 +131,7 @@ function addCaptions(timeline: gsap.core.Timeline) {
 }
 
 export function SofaAssembly() {
+  const trackRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<Array<FrameSource | undefined>>([]);
@@ -178,7 +196,8 @@ export function SofaAssembly() {
   useLayoutEffect(() => {
     if (!heroReady) return;
     const root = sectionRef.current;
-    if (!root) return;
+    const track = trackRef.current;
+    if (!root || !track) return;
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -216,20 +235,55 @@ export function SofaAssembly() {
     });
 
     mm.add("(max-width: 1023px)", () => {
-      const timeline = gsap.timeline({
-        scrollTrigger: {
-          trigger: root,
-          start: "top top",
-          end: () => `+=${Math.round(window.innerHeight * 3.2)}`,
-          pin: true,
-          pinType: "transform",
-          scrub: true,
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-          onUpdate: syncProgress,
-        },
-      });
-      addCaptions(timeline);
+      const distance = () => Math.round(window.innerHeight * 3.2);
+      const layout = () => {
+        const height = window.innerHeight;
+        root.style.height = `${height}px`;
+        track.style.height = `${height + distance()}px`;
+      };
+      let touching = false;
+      let frame = 0;
+      const update = () => {
+        const total = Math.max(1, track.offsetHeight - root.offsetHeight);
+        const scrolled = window.scrollY - track.offsetTop;
+        const progress = Math.min(1, Math.max(0, scrolled / total));
+        progressRef.current = progress;
+        paintCaptions(root, progress);
+        drawRef.current();
+      };
+      const loop = () => {
+        update();
+        if (touching) frame = window.requestAnimationFrame(loop);
+      };
+      const onStart = () => {
+        touching = true;
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(loop);
+      };
+      const onEnd = () => {
+        touching = false;
+        update();
+      };
+      layout();
+      update();
+      window.addEventListener("scroll", update, { passive: true });
+      window.addEventListener("touchstart", onStart, { passive: true });
+      window.addEventListener("touchmove", update, { passive: true });
+      window.addEventListener("touchend", onEnd, { passive: true });
+      window.addEventListener("touchcancel", onEnd, { passive: true });
+      window.addEventListener("orientationchange", layout);
+      return () => {
+        touching = false;
+        window.cancelAnimationFrame(frame);
+        window.removeEventListener("scroll", update);
+        window.removeEventListener("touchstart", onStart);
+        window.removeEventListener("touchmove", update);
+        window.removeEventListener("touchend", onEnd);
+        window.removeEventListener("touchcancel", onEnd);
+        window.removeEventListener("orientationchange", layout);
+        root.style.height = "";
+        track.style.height = "";
+      };
     });
 
     const refresh = () => ScrollTrigger.refresh();
@@ -312,7 +366,8 @@ export function SofaAssembly() {
   }, [heroReady]);
 
   return (
-    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3]">
+    <div ref={trackRef} className="relative touch-pan-y">
+    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3] max-[1023px]:sticky max-[1023px]:top-0">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Mustard velvet sofa assembling" />
       <div
         className="pointer-events-none absolute inset-0 z-10"
@@ -338,5 +393,6 @@ export function SofaAssembly() {
         </p>
       </div>
     </section>
+    </div>
   );
 }
