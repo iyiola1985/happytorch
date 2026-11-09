@@ -12,7 +12,6 @@ export function SmoothScroll() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.config({ ignoreMobileResize: true });
-    ScrollTrigger.normalizeScroll(true);
     const lenis = new Lenis({
       lerp: 0.075,
       smoothWheel: true,
@@ -33,19 +32,22 @@ export function SmoothScroll() {
     gsap.ticker.add(tick);
     gsap.ticker.lagSmoothing(0);
     const refresh = window.setTimeout(() => ScrollTrigger.refresh(), 200);
-    const onResize = () => {
+    const onOrientation = () => {
       lenis.resize();
       ScrollTrigger.refresh();
     };
+    const onViewport = () => {
+      lenis.resize();
+    };
     const onRefresh = () => lenis.resize();
     ScrollTrigger.addEventListener("refresh", onRefresh);
-    window.addEventListener("orientationchange", onResize);
-    window.visualViewport?.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onOrientation);
+    window.visualViewport?.addEventListener("resize", onViewport);
     return () => {
       window.clearTimeout(refresh);
       ScrollTrigger.removeEventListener("refresh", onRefresh);
-      window.removeEventListener("orientationchange", onResize);
-      window.visualViewport?.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onOrientation);
+      window.visualViewport?.removeEventListener("resize", onViewport);
       gsap.ticker.remove(tick);
       registerLenis(null);
       lenis.destroy();

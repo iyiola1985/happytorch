@@ -118,6 +118,7 @@ export function SofaAssembly() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imagesRef = useRef<Array<FrameSource | undefined>>([]);
   const progressRef = useRef(0);
+  const drawRef = useRef<() => void>(() => {});
   const [heroReady, setHeroReady] = useState(false);
 
   useEffect(() => {
@@ -126,7 +127,7 @@ export function SofaAssembly() {
     const mobile = mobileSequence();
     const count = mobile ? MOBILE_FRAME_COUNT : DESKTOP_FRAME_COUNT;
     const frames: Array<FrameSource | undefined> = new Array(count);
-    const maxWidth = mobile ? 900 : 1280;
+    const maxWidth = 1280;
     const heroIndex = count - 1;
     gsap.registerPlugin(ScrollTrigger);
 
@@ -141,6 +142,7 @@ export function SofaAssembly() {
         imagesRef.current = frames;
         ScrollTrigger.refresh();
       }
+      drawRef.current();
     };
 
     const loadOne = async (index: number) => {
@@ -191,27 +193,45 @@ export function SofaAssembly() {
     }
 
     const mm = gsap.matchMedia();
-    const mount = (end: string, pinType: "fixed" | "transform") => {
+    const syncProgress = (self: ScrollTrigger) => {
+      progressRef.current = self.progress;
+      drawRef.current();
+    };
+
+    mm.add("(min-width: 1024px)", () => {
       const timeline = gsap.timeline({
         scrollTrigger: {
           trigger: root,
           start: "top top",
-          end,
+          end: "+=3000",
           pin: true,
-          pinType,
+          pinType: "transform",
           scrub: true,
           anticipatePin: 1,
           invalidateOnRefresh: true,
-          onUpdate: (self) => {
-            progressRef.current = self.progress;
-          },
+          onUpdate: syncProgress,
         },
       });
       addCaptions(timeline);
-    };
+    });
 
-    mm.add("(min-width: 1024px)", () => mount("+=3000", "transform"));
-    mm.add("(max-width: 1023px)", () => mount("+=1500", "fixed"));
+    mm.add("(max-width: 1023px)", () => {
+      const timeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: root,
+          start: "top top",
+          end: () => `+=${Math.round(window.innerHeight * 3.2)}`,
+          pin: true,
+          pinType: "transform",
+          scrub: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+          onUpdate: syncProgress,
+        },
+      });
+      addCaptions(timeline);
+    });
+
     const refresh = () => ScrollTrigger.refresh();
     const refreshSoon = window.setTimeout(refresh, 200);
     window.addEventListener("load", refresh);
@@ -231,7 +251,6 @@ export function SofaAssembly() {
     const ctx = canvas?.getContext("2d", { alpha: false });
     if (!canvas || !parent || !ctx) return;
 
-    let frame = 0;
     let lastKey = "";
 
     const resize = () => {
@@ -269,26 +288,25 @@ export function SofaAssembly() {
       lastKey = key;
     };
 
-    const tick = () => {
+    const paint = () => {
       try {
         draw();
       } catch {
         lastKey = "";
       }
-      frame = window.requestAnimationFrame(tick);
     };
 
+    drawRef.current = paint;
     resize();
-    draw();
+    paint();
     const observer = new ResizeObserver(() => {
       resize();
       lastKey = "";
-      draw();
+      paint();
     });
     observer.observe(parent);
-    frame = window.requestAnimationFrame(tick);
     return () => {
-      window.cancelAnimationFrame(frame);
+      drawRef.current = () => {};
       observer.disconnect();
     };
   }, [heroReady]);
@@ -303,19 +321,19 @@ export function SofaAssembly() {
             "linear-gradient(180deg, rgba(16, 20, 28, 0.42) 0%, rgba(16, 20, 28, 0.18) 28%, rgba(16, 20, 28, 0.28) 52%, rgba(16, 20, 28, 0.55) 100%)",
         }}
       />
-      <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-5 pt-16 text-center text-white sm:px-6">
+      <div className="pointer-events-none absolute inset-0 z-10 flex items-end justify-center px-5 pb-[max(6.5rem,env(safe-area-inset-bottom))] text-center text-white min-[1024px]:items-center min-[1024px]:px-6 min-[1024px]:pb-0 min-[1024px]:pt-16">
         <div data-hero-copy className="w-full">
           <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">Furniture</p>
           <p className="font-sans text-[clamp(2rem,8vw,6.6rem)] leading-[0.92] font-medium tracking-[-0.03em]">&amp; Interiors</p>
           <p className="mt-3 font-serif text-[clamp(1.05rem,3.4vw,3rem)] leading-tight italic">{site.tagline}</p>
         </div>
-        <p data-line="0" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="0" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
           It starts in pieces.
         </p>
-        <p data-line="50" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="50" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
           Engineered to fit together.
         </p>
-        <p data-line="100" className="absolute inset-x-5 top-1/2 -translate-y-1/2 font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 sm:inset-x-6">
+        <p data-line="100" className="absolute inset-x-5 bottom-[max(6.5rem,env(safe-area-inset-bottom))] font-serif text-[clamp(1.55rem,6vw,4.4rem)] leading-[0.95] opacity-0 min-[1024px]:inset-x-6 min-[1024px]:bottom-auto min-[1024px]:top-1/2 min-[1024px]:-translate-y-1/2">
           The Mustard Velvet Sofa. Built to be lived in.
         </p>
       </div>

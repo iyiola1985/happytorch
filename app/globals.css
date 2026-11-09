@@ -21,7 +21,13 @@
 html {
   scroll-behavior: auto;
   color-scheme: light;
-  overflow-x: clip;
+}
+
+[data-lenis-prevent-touch] canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
 }
 
 @media (max-width: 767px) {

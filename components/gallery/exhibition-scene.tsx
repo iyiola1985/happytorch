@@ -321,12 +321,25 @@ function Walker({
   walk: RefObject<WalkControl>;
   bounds: ReturnType<typeof corridorBounds>;
 }) {
-  const { camera, gl } = useThree();
+  const { camera, gl, size } = useThree();
   const look = useMemo(() => new THREE.Vector3(0, EYE, 0), []);
   const desired = useMemo(() => new THREE.Vector3(), []);
   const desiredLook = useMemo(() => new THREE.Vector3(), []);
   const focusIdRef = useRef(focusId);
   focusIdRef.current = focusId;
+
+  useLayoutEffect(() => {
+    const perspective = camera as THREE.PerspectiveCamera;
+    const aspect = size.width / Math.max(size.height, 1);
+    if (aspect < 0.9) {
+      const horizontal = THREE.MathUtils.degToRad(64);
+      const vertical = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(horizontal / 2) / aspect));
+      perspective.fov = THREE.MathUtils.clamp(vertical, 50, 86);
+    } else {
+      perspective.fov = 50;
+    }
+    perspective.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
 
   useEffect(() => {
     const element = gl.domElement;
@@ -334,26 +347,33 @@ function Walker({
     let lastY = 0;
     let active = false;
     const down = (event: PointerEvent) => {
+      if (event.button !== 0) return;
       active = true;
       dragged.current = false;
       lastX = event.clientX;
       lastY = event.clientY;
+      try {
+        element.setPointerCapture(event.pointerId);
+      } catch {
+        active = true;
+      }
     };
     const move = (event: PointerEvent) => {
       if (!active || focusIdRef.current || !walk.current) return;
       const dx = event.clientX - lastX;
       const dy = event.clientY - lastY;
-      if (Math.hypot(dx, dy) > 5) dragged.current = true;
+      if (Math.hypot(dx, dy) > 14) dragged.current = true;
       lastX = event.clientX;
       lastY = event.clientY;
       walk.current.yaw = THREE.MathUtils.clamp(walk.current.yaw - dx * 0.0024, -0.5, 0.5);
       walk.current.progress = THREE.MathUtils.clamp(walk.current.progress - dy * 0.0018, 0, 1);
     };
-    const up = () => {
+    const up = (event: PointerEvent) => {
       active = false;
+      if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId);
       window.setTimeout(() => {
         dragged.current = false;
-      }, 0);
+      }, 40);
     };
     const wheel = (event: WheelEvent) => {
       if (focusIdRef.current || !walk.current) return;
@@ -361,13 +381,15 @@ function Walker({
       walk.current.progress = THREE.MathUtils.clamp(walk.current.progress + event.deltaY * 0.00055, 0, 1);
     };
     element.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+    element.addEventListener("pointermove", move);
+    element.addEventListener("pointerup", up);
+    element.addEventListener("pointercancel", up);
     element.addEventListener("wheel", wheel, { passive: false });
     return () => {
       element.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
+      element.removeEventListener("pointermove", move);
+      element.removeEventListener("pointerup", up);
+      element.removeEventListener("pointercancel", up);
       element.removeEventListener("wheel", wheel);
     };
   }, [gl, walk]);

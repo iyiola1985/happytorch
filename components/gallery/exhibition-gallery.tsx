@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { WalkControl } from "@/components/gallery/exhibition-scene";
+import { setLenisLocked } from "@/components/layout/lenis-controller";
 import { categoryName } from "@/lib/catalog";
 import { layoutExhibition } from "@/lib/exhibition-layout";
 import { stockLabel } from "@/lib/format";
@@ -40,15 +41,15 @@ export function ExhibitionGallery({
   useEffect(() => {
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const narrow = window.matchMedia("(max-width: 767px)");
+    setLenisLocked("showroom", true);
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const apply = () => {
       setReduced(motion.matches);
-      const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8;
-      setLowPower(narrow.matches || memory <= 4);
+      const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+      const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+      setLowPower(Boolean(connection?.saveData) || (typeof memory === "number" && memory <= 4));
     };
     apply();
-    narrow.addEventListener("change", apply);
     motion.addEventListener("change", apply);
     try {
       const canvas = document.createElement("canvas");
@@ -74,7 +75,7 @@ export function ExhibitionGallery({
     return () => {
       document.body.style.overflow = previous;
       document.body.style.cursor = "";
-      narrow.removeEventListener("change", apply);
+      setLenisLocked("showroom", false);
       motion.removeEventListener("change", apply);
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("keydown", onKey);
@@ -87,7 +88,7 @@ export function ExhibitionGallery({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-ivory text-espresso">
+    <div className="fixed inset-0 z-50 bg-ivory text-espresso" data-lenis-prevent-touch>
       {webgl ? (
         <ExhibitionCanvas
           displays={displays}
@@ -114,9 +115,9 @@ export function ExhibitionGallery({
         </Link>
       </div>
       {webgl && !focus ? (
-        <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-8 text-[0.68rem] uppercase tracking-[0.22em]">
-          <button type="button" onClick={() => { walk.current.nudge -= 0.08; }}>Back</button>
-          <button type="button" onClick={() => { walk.current.nudge += 0.08; }}>Forward</button>
+        <div className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 flex -translate-x-1/2 gap-3 text-[0.68rem] uppercase tracking-[0.22em]">
+          <button type="button" className="min-h-11 min-w-24 px-4" onClick={() => { walk.current.nudge -= 0.08; }}>Back</button>
+          <button type="button" className="min-h-11 min-w-24 px-4" onClick={() => { walk.current.nudge += 0.08; }}>Forward</button>
         </div>
       ) : null}
       {webgl && !ready ? <p className="absolute inset-0 grid place-items-center text-[0.68rem] uppercase tracking-[0.28em] text-espresso/60">Opening the corridor</p> : null}
