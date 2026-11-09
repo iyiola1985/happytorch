@@ -73,23 +73,27 @@ function mobileSequence() {
   return window.matchMedia("(max-width: 1023px)").matches;
 }
 
-async function decodeFrame(src: string, maxWidth: number) {
-  const response = await fetch(src);
-  if (!response.ok) throw new Error("frame");
-  const blob = await response.blob();
-  if (maxWidth < 1280 && typeof createImageBitmap === "function") {
-    return createImageBitmap(blob, { resizeWidth: maxWidth, resizeQuality: "medium" });
-  }
-  const url = URL.createObjectURL(blob);
-  try {
+function decodeFrame(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
     const image = new Image();
     image.decoding = "async";
-    image.src = url;
-    await image.decode();
-    return image;
-  } finally {
-    URL.revokeObjectURL(url);
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("frame"));
+    image.src = src;
+    image.decode().catch(() => undefined);
+  });
+}
+
+function nearestFrame(images: Array<FrameSource | undefined>, index: number) {
+  const exact = images[index];
+  if (exact && frameSize(exact).width > 0) return exact;
+  for (let step = 1; step < images.length; step += 1) {
+    const before = images[index - step];
+    if (before && frameSize(before).width > 0) return before;
+    const after = images[index + step];
+    if (after && frameSize(after).width > 0) return after;
   }
+  return undefined;
 }
 
 function frameAt(progress: number, count: number) {
@@ -145,7 +149,6 @@ export function SofaAssembly() {
     const mobile = mobileSequence();
     const count = mobile ? MOBILE_FRAME_COUNT : DESKTOP_FRAME_COUNT;
     const frames: Array<FrameSource | undefined> = new Array(count);
-    const maxWidth = 1280;
     const heroIndex = count - 1;
     gsap.registerPlugin(ScrollTrigger);
 
@@ -165,9 +168,9 @@ export function SofaAssembly() {
 
     const loadOne = async (index: number) => {
       try {
-        frames[index] = await decodeFrame(sequenceFrameSrc(index, mobile), maxWidth);
+        frames[index] = await decodeFrame(sequenceFrameSrc(index, mobile));
       } catch {
-        frames[index] = frames[heroIndex];
+        frames[index] = undefined;
       }
       finish();
     };
@@ -243,9 +246,30 @@ export function SofaAssembly() {
       };
       let touching = false;
       let frame = 0;
+      const place = (scrolled: number, total: number) => {
+        root.style.left = "0px";
+        root.style.width = "100%";
+        if (scrolled > 0 && scrolled < total) {
+          root.style.position = "fixed";
+          root.style.top = "0px";
+          root.style.zIndex = "1";
+          return;
+        }
+        root.style.zIndex = "";
+        if (scrolled >= total) {
+          root.style.position = "absolute";
+          root.style.top = `${total}px`;
+          return;
+        }
+        root.style.position = "";
+        root.style.top = "";
+        root.style.left = "";
+        root.style.width = "";
+      };
       const update = () => {
         const total = Math.max(1, track.offsetHeight - root.offsetHeight);
         const scrolled = window.scrollY - track.offsetTop;
+        place(scrolled, total);
         const progress = Math.min(1, Math.max(0, scrolled / total));
         progressRef.current = progress;
         paintCaptions(root, progress);
@@ -282,6 +306,11 @@ export function SofaAssembly() {
         window.removeEventListener("touchcancel", onEnd);
         window.removeEventListener("orientationchange", layout);
         root.style.height = "";
+        root.style.position = "";
+        root.style.top = "";
+        root.style.left = "";
+        root.style.width = "";
+        root.style.zIndex = "";
         track.style.height = "";
       };
     });
@@ -329,11 +358,11 @@ export function SofaAssembly() {
       const key = `${index}:${mix.toFixed(3)}:${width}:${height}`;
       if (key === lastKey) return;
       const sofa = images[count - 1];
-      const image = images[index];
+      const image = nearestFrame(images, index);
       if (!sofa || frameSize(sofa).width === 0) return;
-      if (mix > 0 && (!image || frameSize(image).width === 0)) return;
+      if (mix > 0 && !image) return;
       ctx.globalAlpha = 1;
-      paintFrame(ctx, sofa, width, height);
+      if (mix < 1) paintFrame(ctx, sofa, width, height);
       if (mix > 0 && image) {
         ctx.globalAlpha = mix;
         paintFrame(ctx, image, width, height);
@@ -367,7 +396,7 @@ export function SofaAssembly() {
 
   return (
     <div ref={trackRef} className="relative touch-pan-y">
-    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3] max-[1023px]:sticky max-[1023px]:top-0">
+    <section id="furniture" ref={sectionRef} className="relative h-[100dvh] overflow-hidden bg-[#F2F3F3]">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-label="Mustard velvet sofa assembling" />
       <div
         className="pointer-events-none absolute inset-0 z-10"
